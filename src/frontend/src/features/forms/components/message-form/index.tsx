@@ -58,6 +58,14 @@ const messageFormSchema = z.object({
         blobId: z.string(),
         name: z.string(),
     })).optional(),
+    driveAttachments: z.array(z.object({
+        id: z.string(),
+        name: z.string(),
+        url: z.string(),
+        type: z.string(),
+        size: z.number(),
+        created_at: z.string(),
+    })).optional(),
 });
 
 type MessageFormFields = z.infer<typeof messageFormSchema>;
@@ -129,10 +137,11 @@ export const MessageForm = ({
         cc: (draft?.cc?.map(contact => contact.email) ?? []).join(', '),
         bcc: (draft?.bcc?.map(contact => contact.email) ?? []).join(', '),
         subject: parentMessage ? 'RE' : (draft?.subject ?? ''),
-        messageEditorDraft: draft?.draftBody,
+        messageEditorDraft: MailHelper.extractDriveAttachmentsFromDraft(draft?.draftBody)[0],
         messageEditorHtml: undefined,
         messageEditorText: undefined,
         attachments: draft?.attachments.map(a => ({ blobId: a.blobId, name: a.name })),
+        driveAttachments: MailHelper.extractDriveAttachmentsFromDraft(draft?.draftBody)[1],
     }), [draft, selectedMailbox])
 
     const form = useForm({
@@ -249,7 +258,7 @@ export const MessageForm = ({
             subject: subject,
             senderId: data.from,
             parentId: parentMessage?.id,
-            draftBody: data.messageEditorDraft,
+            draftBody: MailHelper.attachDriveAttachmentsToDraft(data.messageEditorDraft, form.getValues('driveAttachments')),
             attachments: form.getValues('attachments'),
         }
         let response;
@@ -299,8 +308,8 @@ export const MessageForm = ({
             data: {
                 messageId: draft.id,
                 senderId: data.from,
-                htmlBody: form.getValues('messageEditorHtml'),
-                textBody: form.getValues('messageEditorText'),
+                htmlBody: MailHelper.attachDriveAttachmentsToHtmlBody(form.getValues('messageEditorHtml'), form.getValues('driveAttachments')),
+                textBody: MailHelper.attachDriveAttachmentsToTextBody(form.getValues('messageEditorText'), form.getValues('driveAttachments')),
             }
         });
     };
@@ -416,7 +425,7 @@ export const MessageForm = ({
                     />
                 </div>
 
-                <AttachmentUploader initialAttachments={draft?.attachments} onChange={form.handleSubmit(saveDraft)} />
+                <AttachmentUploader initialAttachments={[...(draft?.attachments ?? []), ...(form.getValues('driveAttachments') ?? [])]} onChange={form.handleSubmit(saveDraft)} />
 
                 <footer className="form-footer">
                     <Button

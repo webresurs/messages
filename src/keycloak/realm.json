@@ -29,7 +29,7 @@
   "oauth2DevicePollingInterval" : 5,
   "enabled" : true,
   "sslRequired" : "external",
-  "registrationAllowed" : false,
+  "registrationAllowed" : true,
   "registrationEmailAsUsername" : true,
   "rememberMe" : true,
   "verifyEmail" : false,
@@ -363,11 +363,11 @@
     "clientRoles" : { }
   }, {
     "id" : "2b66842b-0143-44f4-8bde-fdf443a43314",
-    "name" : "maildomain-example.local",
-    "path" : "/maildomain-example.local",
+    "name" : "maildomain-brigny.collectivite.fr",
+    "path" : "/maildomain-brigny.collectivite.fr",
     "subGroups" : [ ],
     "attributes" : {
-      "maildomain_name" : [ "example.local" ],
+      "maildomain_name" : [ "brigny.collectivite.fr" ],
       "maildomain_id" : [ "6228a9d0-336a-4729-8d1f-9bcb3c5ca8f6" ]
     },
     "realmRoles" : [ ],
@@ -431,14 +431,14 @@
     "groups" : [ ]
   }, {
     "id" : "bbcbe86d-200c-42c6-86ab-4990e5833165",
-    "username" : "user1@example.local",
+    "username" : "user1@brigny.collectivite.fr",
     "firstName" : "User",
     "lastName" : "Un",
-    "email" : "user1@example.local",
+    "email" : "user1@brigny.collectivite.fr",
     "emailVerified" : false,
     "attributes" : {
       "mailbox_id" : [ "58e8542d-ddd4-49d2-8a94-6df5e2d7263f" ],
-      "domain_name" : [ "example.local" ],
+      "domain_name" : [ "brigny.collectivite.fr" ],
       "local_part" : [ "user1" ],
       "maildomain_id" : [ "6228a9d0-336a-4729-8d1f-9bcb3c5ca8f6" ]
     },
@@ -455,13 +455,13 @@
     "requiredActions" : [ ],
     "realmRoles" : [ "user" ],
     "notBefore" : 0,
-    "groups" : [ "/maildomain-example.local" ]
+    "groups" : [ "/maildomain-brigny.collectivite.fr" ]
   }, {
     "id" : "f5c48aa8-af3e-45e5-9887-e4d6c077265f",
-    "username" : "user2@example.local",
+    "username" : "user2@brigny.collectivite.fr",
     "firstName" : "User",
     "lastName" : "Deux",
-    "email" : "user2@example.local",
+    "email" : "user2@brigny.collectivite.fr",
     "emailVerified" : false,
     "enabled" : true,
     "totp" : false,
@@ -479,10 +479,10 @@
     "groups" : [ ]
   }, {
     "id" : "965b493d-0b6f-43c4-b5c3-2ad4d0199a06",
-    "username" : "user3@example.local",
+    "username" : "user3@brigny.collectivite.fr",
     "firstName" : "User",
     "lastName" : "Trois",
-    "email" : "user3@example.local",
+    "email" : "user3@brigny.collectivite.fr",
     "emailVerified" : false,
     "enabled" : true,
     "totp" : false,
