@@ -3,7 +3,7 @@ import { Attachment } from "@/features/api/gen/models";
 import { useBlobUploadCreate } from "@/features/api/gen/blob/blob";
 import { useMailboxContext } from '@/features/providers/mailbox';
 import { useFormContext } from 'react-hook-form';
-import { Button } from '@openfun/cunningham-react';
+import { Button, Field } from '@openfun/cunningham-react';
 import { AttachmentItem } from '@/features/layouts/components/thread-view/components/thread-attachment-list/attachment-item';
 import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
@@ -18,6 +18,8 @@ interface AttachmentUploaderProps {
     onChange: () => void;
 }
 
+const MAX_ATTACHMENT_SIZE = 24 * 1024 * 1024; // 25MB
+
 export const AttachmentUploader = ({
     initialAttachments = [],
     onChange
@@ -30,11 +32,14 @@ export const AttachmentUploader = ({
     const [failedQueue, setFailedQueue] = useState<File[]>([]);
     const { mutateAsync: uploadBlob } = useBlobUploadCreate();
     const debouncedOnChange = useDebounceCallback(onChange, 1000);
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
         onDrop: async (acceptedFiles) => {
             await Promise.all(acceptedFiles.map(uploadFile));
-        }
+        },
+        maxSize: MAX_ATTACHMENT_SIZE,
     });
+
+    const isFileTooLarge = fileRejections.some(rejection => rejection.errors[0].code === 'file-too-large');
 
     const addToUploadingQueue = (attachments: File[]) => setUploadingQueue(queue => [...queue, ...attachments]);
     const addToFailedQueue = (attachments: File[]) => setFailedQueue(queue => [...queue, ...attachments]);
@@ -119,53 +124,59 @@ export const AttachmentUploader = ({
     }, [attachments]);
 
     return (
-        <section className="attachment-uploader" {...getRootProps()} onClick={handleClick}>
-            <DropZone isHidden={!isDragActive} />
-            <div className="attachment-uploader__input">
-                <Button
-                    color="tertiary"
-                    icon={<span className="material-icons">attach_file</span>}
-                    type="button"
-                >
-                    {t("message_form.attachments_uploader.input_label")}
-                </Button>
-                <DriveAttachment onChange={handleDriveAttachmentChange} />
-                <p className="attachment-uploader__input__helper-text">
-                    {t("message_form.attachments_uploader.or_drag_and_drop")}
-                </p>
-                <input {...getInputProps()} />
-            </div>
-            { [...attachments, ...uploadingQueue, ...failedQueue].length > 0 && (
-                <div className="attachment-uploader__bucket">
-                    <p className="attachment-bucket__counter">
-                        <strong>{t("attachments.counter", { count: attachments.length })}</strong>{' '}
-                        ({AttachmentHelper.getFormattedTotalSize(attachments, i18n.language)})
+        <Field
+            text={isFileTooLarge ? t("message_form.attachments_uploader.errors.file_too_large", { size: AttachmentHelper.getFormattedSize(MAX_ATTACHMENT_SIZE, i18n.language) }) : t("message_form.attachments_uploader.helper_text", { size: AttachmentHelper.getFormattedSize(MAX_ATTACHMENT_SIZE, i18n.language) })}
+            state={isFileTooLarge ? 'error' : 'default'}
+            fullWidth
+        >
+            <section className="attachment-uploader" {...getRootProps()} onClick={handleClick}>
+                <DropZone isHidden={!isDragActive} />
+                <div className="attachment-uploader__input">
+                    <Button
+                        color="tertiary"
+                        icon={<span className="material-icons">attach_file</span>}
+                        type="button"
+                    >
+                        {t("message_form.attachments_uploader.input_label")}
+                    </Button>
+                    <DriveAttachment onChange={handleDriveAttachmentChange} />
+                    <p className="attachment-uploader__input__helper-text">
+                        {t("message_form.attachments_uploader.or_drag_and_drop")}
                     </p>
-                    <div className="attachment-bucket__list">
-                        {failedQueue.map((entry) => (
-                            <AttachmentItem
-                                key={`failed-${entry.name}-${entry.size}-${entry.lastModified}`}
-                                attachment={entry}
-                                variant="error"
-                                errorAction={() => uploadFile(entry)}
-                                onDelete={() => removeToFailedQueue([entry])}
-                                canDownload={false}
-                                errorMessage={t("message_form.attachments_uploader.error_message")}
-                            />
-                        ))}
-                        {uploadingQueue.map((entry) => (
-                            <AttachmentItem key={`uploading-${entry.name}-${entry.size}-${entry.lastModified}`} attachment={entry} isLoading />
-                        ))}
-                        {attachments.map((entry) => (
-                            <AttachmentItem
-                                key={'blobId' in entry ? entry.blobId : entry.id}
-                                attachment={entry}
-                                onDelete={() => removeToAttachments([entry])}
-                            />
-                        ))}
-                    </div>
+                    <input {...getInputProps()} />
                 </div>
-            )}
-        </section>
+                { [...attachments, ...uploadingQueue, ...failedQueue].length > 0 && (
+                    <div className="attachment-uploader__bucket">
+                        <p className="attachment-bucket__counter">
+                            <strong>{t("attachments.counter", { count: attachments.length })}</strong>{' '}
+                            ({AttachmentHelper.getFormattedTotalSize(attachments, i18n.language)})
+                        </p>
+                        <div className="attachment-bucket__list">
+                            {failedQueue.map((entry) => (
+                                <AttachmentItem
+                                    key={`failed-${entry.name}-${entry.size}-${entry.lastModified}`}
+                                    attachment={entry}
+                                    variant="error"
+                                    errorAction={() => uploadFile(entry)}
+                                    onDelete={() => removeToFailedQueue([entry])}
+                                    canDownload={false}
+                                    errorMessage={t("message_form.attachments_uploader.error_message")}
+                                />
+                            ))}
+                            {uploadingQueue.map((entry) => (
+                                <AttachmentItem key={`uploading-${entry.name}-${entry.size}-${entry.lastModified}`} attachment={entry} isLoading />
+                            ))}
+                            {attachments.map((entry) => (
+                                <AttachmentItem
+                                    key={'blobId' in entry ? entry.blobId : entry.id}
+                                    attachment={entry}
+                                    onDelete={() => removeToAttachments([entry])}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </section>
+        </Field>
     );
 };
