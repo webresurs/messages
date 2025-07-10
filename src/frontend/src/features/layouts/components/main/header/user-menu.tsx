@@ -3,14 +3,21 @@ import { DropdownMenu } from "@gouvfr-lasuite/ui-kit";
 import { Button } from "@openfun/cunningham-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useRouter } from "next/router";
 
 const UserMenu = () => {
     const [isOpen, setIsOpen] = useState(false);
     const { t } = useTranslation();
+    const router = useRouter();
 
     return (
         <DropdownMenu
           options={[
+            {
+              label: t("user_menu.admin"),
+              icon: <span className="material-icons">admin_panel_settings</span>,
+              callback: () => router.push("/admin"),
+            },
             {
               label: t("user_menu.logout"),
               icon: <span className="material-icons">logout</span>,

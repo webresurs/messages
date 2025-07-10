@@ -92,6 +92,7 @@ bootstrap: \
 build: ## build the project containers
 	@$(MAKE) build-backend
 	@$(MAKE) build-frontend-dev
+	@$(COMPOSE) build mta-in
 .PHONY: build
 
 build-backend: ## build the backend-dev container

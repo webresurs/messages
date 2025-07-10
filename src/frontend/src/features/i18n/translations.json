@@ -12,6 +12,7 @@
         "title": "New message"
       },
       "user_menu": {
+        "admin": "Administration",
         "logout": "Logout"
       },
       "aria": {
@@ -386,6 +387,7 @@
         "title": "Nouveau message"
       },
       "user_menu": {
+        "admin": "Administration",
         "logout": "Déconnexion"
       },
       "aria": {
