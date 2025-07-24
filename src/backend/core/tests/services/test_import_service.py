@@ -463,8 +463,6 @@ def test_import_imap_by_superuser(admin_user, mailbox, mock_request):
             recipient=mailbox,
             user=admin_user,
             use_ssl=True,
-            folder="INBOX",
-            max_messages=0,
             request=mock_request,
         )
 
@@ -497,8 +495,6 @@ def test_import_imap_by_user_with_access(user, mailbox, mock_request, role):
             recipient=mailbox,
             user=user,
             use_ssl=True,
-            folder="INBOX",
-            max_messages=0,
             request=mock_request,
         )
 
@@ -521,8 +517,6 @@ def test_import_imap_no_access(user, domain, mock_request):
         recipient=mailbox,
         user=user,
         use_ssl=True,
-        folder="INBOX",
-        max_messages=0,
         request=mock_request,
     )
 
@@ -545,8 +539,6 @@ def test_import_imap_task_error(admin_user, mailbox, mock_request):
             recipient=mailbox,
             user=admin_user,
             use_ssl=True,
-            folder="INBOX",
-            max_messages=0,
             request=mock_request,
         )
 
@@ -558,31 +550,9 @@ def test_import_imap_task_error(admin_user, mailbox, mock_request):
 def test_import_imap_messages_by_superuser(admin_user, mailbox, mock_request):
     """Test importing messages from IMAP server by superuser."""
 
-    # Mock IMAP connection and responses
-    with patch("imaplib.IMAP4_SSL") as mock_imap:
-        mock_imap_instance = mock_imap.return_value
-        mock_imap_instance.select.return_value = ("OK", [b"1"])
-        mock_imap_instance.search.return_value = ("OK", [b"1 2"])
-
-        # Mock 2 messages
-        message1 = b"""From: sender@example.com
-To: recipient@example.com
-Subject: Test Message 1
-Date: Mon, 26 May 2025 10:00:00 +0000
-
-Test message body 1"""
-
-        message2 = b"""From: sender@example.com 
-To: recipient@example.com
-Subject: Test Message 2
-Date: Mon, 26 May 2025 11:00:00 +0000
-
-Test message body 2"""
-
-        mock_imap_instance.fetch.side_effect = [
-            ("OK", [(b"1", message1)]),
-            ("OK", [(b"2", message2)]),
-        ]
+    # Mock the Celery task
+    with patch("core.tasks.import_imap_messages_task.delay") as mock_task:
+        mock_task.return_value.id = "fake-task-id"
 
         success, response_data = ImportService.import_imap(
             imap_server="imap.example.com",
@@ -592,29 +562,21 @@ Test message body 2"""
             recipient=mailbox,
             user=admin_user,
             use_ssl=True,
-            folder="INBOX",
-            max_messages=2,
             request=mock_request,
         )
 
         assert success is True
         assert response_data["type"] == "imap"
-        assert "task_id" in response_data
+        assert response_data["task_id"] == "fake-task-id"
 
-        # Verify IMAP calls
-        mock_imap_instance.login.assert_called_once_with(
-            "test@example.com", "password123"
-        )
-        mock_imap_instance.select.assert_called_once_with("INBOX")
-        mock_imap_instance.search.assert_called_once_with(None, "ALL")
-        assert mock_imap_instance.fetch.call_count == 2
-        assert Message.objects.count() == 2
-        message = Message.objects.last()
-        assert message.subject == "Test Message 1"
-        assert message.sender.email == "sender@example.com"
-        assert message.recipients.get().contact.email == "recipient@example.com"
-        assert message.sent_at == datetime.datetime(
-            2025, 5, 26, 10, 0, 0, tzinfo=datetime.timezone.utc
+        # Verify the task was called with correct parameters
+        mock_task.assert_called_once_with(
+            imap_server="imap.example.com",
+            imap_port=993,
+            username="test@example.com",
+            password="password123",
+            use_ssl=True,
+            recipient_id=str(mailbox.id),
         )
 
 
@@ -623,31 +585,9 @@ def test_import_imap_messages_user_with_access(user, mailbox, mock_request):
     # Add access to mailbox
     mailbox.accesses.create(user=user, role=MailboxRoleChoices.ADMIN)
 
-    # Mock IMAP connection and responses
-    with patch("imaplib.IMAP4_SSL") as mock_imap:
-        mock_imap_instance = mock_imap.return_value
-        mock_imap_instance.select.return_value = ("OK", [b"1"])
-        mock_imap_instance.search.return_value = ("OK", [b"1 2"])
-
-        # Mock 2 messages
-        message1 = b"""From: sender@example.com
-To: recipient@example.com
-Subject: Test Message 1
-Date: Mon, 26 May 2025 10:00:00 +0000
-
-Test message body 1"""
-
-        message2 = b"""From: sender@example.com 
-To: recipient@example.com
-Subject: Test Message 2
-Date: Mon, 26 May 2025 11:00:00 +0000
-
-Test message body 2"""
-
-        mock_imap_instance.fetch.side_effect = [
-            ("OK", [(b"1", message1)]),
-            ("OK", [(b"2", message2)]),
-        ]
+    # Mock the Celery task
+    with patch("core.tasks.import_imap_messages_task.delay") as mock_task:
+        mock_task.return_value.id = "fake-task-id"
 
         success, response_data = ImportService.import_imap(
             imap_server="imap.example.com",
@@ -657,27 +597,19 @@ Test message body 2"""
             recipient=mailbox,
             user=user,
             use_ssl=True,
-            folder="INBOX",
-            max_messages=2,
             request=mock_request,
         )
 
         assert success is True
         assert response_data["type"] == "imap"
-        assert "task_id" in response_data
+        assert response_data["task_id"] == "fake-task-id"
 
-        # Verify IMAP calls
-        mock_imap_instance.login.assert_called_once_with(
-            "test@example.com", "password123"
-        )
-        mock_imap_instance.select.assert_called_once_with("INBOX")
-        mock_imap_instance.search.assert_called_once_with(None, "ALL")
-        assert mock_imap_instance.fetch.call_count == 2
-        assert Message.objects.count() == 2
-        message = Message.objects.last()
-        assert message.subject == "Test Message 1"
-        assert message.sender.email == "sender@example.com"
-        assert message.recipients.get().contact.email == "recipient@example.com"
-        assert message.sent_at == datetime.datetime(
-            2025, 5, 26, 10, 0, 0, tzinfo=datetime.timezone.utc
+        # Verify the task was called with correct parameters
+        mock_task.assert_called_once_with(
+            imap_server="imap.example.com",
+            imap_port=993,
+            username="test@example.com",
+            password="password123",
+            use_ssl=True,
+            recipient_id=str(mailbox.id),
         )
