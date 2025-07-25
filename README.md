@@ -83,6 +83,12 @@ $ docker compose version
 > ⚠️ You may need to run the following commands with `sudo` but this can be
 > avoided by assigning your user to the `docker` group.
 
+```shellscript
+$ git clone https://github.com/suitenumerique/messages.git
+
+$ cd ./messages/
+```
+
 ### Project bootstrap
 
 The easiest way to start working on the project is to use [GNU Make](https://www.gnu.org/software/make/):
